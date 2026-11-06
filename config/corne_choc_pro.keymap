@@ -27,10 +27,10 @@
             //                    | GUI | LWR | SPC |               | ENT | RSE  | ALT |
 
             bindings = <
-&kp TAB    &kp APOSTROPHE  &kp LS(COMMA)  &kp DOT   &kp P  &kp Y      &kp C_MUTE  &kp C_PP  &kp F    &kp G  &kp C     &kp R  &kp L  &kp BSPC
-&kp LCTRL  &kp A           &kp O          &kp E     &kp U  &kp I      &kp LALT    &kp RALT  &kp D    &kp H  &kp T     &kp N  &kp S  &kp SQT
-&kp LSHFT  &kp Z           &kp Q          &kp J     &kp K  &kp X                            &kp B    &kp M  &kp W     &kp V  &kp Z  &kp ESC
-                                          &kp LGUI  &mo 1  &kp SPACE                        &kp RET  &mo 2  &kp RALT
+&kp TAB       &kp APOSTROPHE  &kp COMMA  &kp DOT   &kp P  &kp Y      &kp C_MUTE  &kp C_PP  &kp F    &kp G  &kp C            &kp R  &kp L  &kp BSPC
+&kp LCTRL     &kp A           &kp O      &kp E     &kp U  &kp I      &kp LALT    &kp RALT  &kp D    &kp H  &kp T            &kp N  &kp S  &kp SQT
+&kp LEFT_ALT  &kp Z           &kp Q      &kp J     &kp K  &kp X                            &kp B    &kp M  &kp W            &kp V  &kp Z  &kp ESC
+                                         &kp LGUI  &mo 1  &kp SPACE                        &kp RET  &mo 2  &kp RIGHT_SHIFT
             >;
 
             sensor-bindings = <&inc_dec_kp C_VOL_DN C_VOL_UP &inc_dec_kp PG_UP PG_DN &inc_dec_kp C_PREV C_NEXT &inc_dec_kp C_VOL_DN C_VOL_UP>;
@@ -46,9 +46,9 @@
             //                    | GUI |     | SPC   |        | ENT   |     | ALT |
 
             bindings = <
-&kp TAB    &kp N1        &kp N2           &kp N3        &kp N4        &kp N5          &kp LCTRL  &kp RCTRL  &kp N6    &kp N7    &kp N8     &kp N9     &kp N0  &kp BSPC
-&kp LCTRL  &bt BT_SEL 0  &bt BT_SEL 1     &bt BT_SEL 2  &bt BT_SEL 3  &bt BT_SEL 4    &kp LALT   &kp RALT   &kp LEFT  &kp DOWN  &kp UP     &kp RIGHT  &trans  &trans
-&kp LSHFT  &bt BT_CLR    &rgb_ug RGB_TOG  &sys_reset    &bootloader   &studio_unlock                        &trans    &trans    &trans     &trans     &trans  &trans
+&kp TAB    &kp N1        &kp N2           &kp N3        &kp N4        &kp N5          &kp LCTRL  &kp RCTRL  &kp N6    &kp N7    &kp N8     &kp N9     &kp RIGHT      &kp BSPC
+&kp LCTRL  &bt BT_SEL 0  &bt BT_SEL 1     &bt BT_SEL 2  &bt BT_SEL 3  &bt BT_SEL 4    &kp LALT   &kp RALT   &kp PLUS  &kp LEFT  &kp N0     &kp EQUAL  &kp BACKSPACE  &trans
+&kp LSHFT  &bt BT_CLR    &rgb_ug RGB_TOG  &kp DOWN      &kp UP        &studio_unlock                        &trans    &trans    &kp MINUS  &trans     &trans         &trans
                                           &kp LGUI      &trans        &kp SPACE                             &kp LGUI  &trans    &kp SPACE
             >;
         };
@@ -63,9 +63,9 @@
             //                    | GUI |     | SPC |               | ENT |     | ALT |
 
             bindings = <
-&kp TAB    &kp EXCL         &kp AT           &kp HASH  &kp DLLR  &kp PRCNT  &kp LCTRL  &kp RCTRL  &kp CARET  &kp AMPS   &kp ASTRK  &kp LPAR  &kp RPAR  &kp BSPC
-&kp LCTRL  &rgb_ug RGB_HUD  &rgb_ug RGB_HUI  &trans    &trans    &trans     &kp LALT   &kp RALT   &kp MINUS  &kp EQUAL  &kp LBKT   &kp RBKT  &kp BSLH  &kp GRAVE
-&kp LSHFT  &trans           &trans           &trans    &trans    &trans                           &kp UNDER  &kp PLUS   &kp LBRC   &kp RBRC  &kp PIPE  &kp TILDE
+&kp TAB    &kp EXCL         &kp AT           &kp HASH  &kp DLLR  &kp PRCNT  &kp LCTRL  &kp RCTRL  &kp CARET  &kp AMPS   &kp LEFT_PARENTHESIS  &kp RIGHT_PARENTHESIS  &kp ASTERISK  &kp BSPC
+&kp LCTRL  &rgb_ug RGB_HUD  &rgb_ug RGB_HUI  &trans    &trans    &trans     &kp LALT   &kp RALT   &kp MINUS  &kp EQUAL  &kp LBKT              &kp RBKT               &kp BSLH      &kp GRAVE
+&kp LSHFT  &trans           &trans           &trans    &trans    &trans                           &kp UNDER  &kp PLUS   &kp LBRC              &kp RBRC               &kp PIPE      &kp TILDE
                                              &kp LGUI  &trans    &kp SPACE                        &kp RET    &trans     &kp RALT
             >;
         };
