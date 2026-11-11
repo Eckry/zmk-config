@@ -1,7 +1,48 @@
 /*
- * Copyright (c) 2020 The ZMK Contributors
+ * Corne Choc Pro BT — Dvorak
  *
  * SPDX-License-Identifier: MIT
+ *
+ * ---------------------------------------------------------------------------
+ * NOTAS DE DISEÑO (leer antes de flashear)
+ * ---------------------------------------------------------------------------
+ *
+ * 1. El host debe estar en QWERTY US. El firmware hace la traduccion a Dvorak
+ *    mandando scancodes. Si el sistema operativo tambien esta en Dvorak, se
+ *    aplican dos traducciones en cascada y sale basura.
+ *
+ * 2. Correcciones respecto al keymap anterior:
+ *      - Fila inferior izquierda tenia "&kp Z" duplicada donde Dvorak lleva el
+ *        punto y coma. Ahora es "&kp SEMICOLON" (shift da los dos puntos).
+ *      - Fila home, columna exterior derecha tenia "&kp SQT" duplicando el
+ *        apostrofe de la fila superior. Ahora es "&kp SLASH" (shift da el
+ *        signo de interrogacion).
+ *      - Los pulgares de las capas tenian teclas reales en vez de "&trans",
+ *        lo que hacia perder Enter mientras se mantenia una capa.
+ *
+ * 3. Numeracion de posiciones fisicas (para hold-trigger-key-positions):
+ *      Fila 0:  0-13   (izquierda 0-6, derecha 7-13)
+ *      Fila 1:  14-27  (izquierda 14-20, derecha 21-27)
+ *      Fila 2:  28-39  (izquierda 28-33, derecha 34-39)
+ *      Pulgares: 40-45 (izquierda 40-42, derecha 43-45)
+ *
+ *    POSICIONES MUERTAS: 6, 7, 20 y 21. Son la columna interior de dos teclas
+ *    por mitad que declara el shield "corne_choc_pro" pero que esta placa no
+ *    tiene fisicamente. El arreglo de bindings DEBE conservar las 46 entradas
+ *    (ZMK indexa por la distribucion declarada, no por lo soldado), pero esas
+ *    cuatro nunca disparan nada. Estan puestas como &none a proposito: no les
+ *    asignes nada que necesites. Aparecen en los hold-trigger-key-positions,
+ *    lo cual es inofensivo porque jamas se activan.
+ *
+ * 4. PLAN DE TRANSICION: la primera semana flashea esto con los home row mods
+ *    DESACTIVADOS. Para desactivarlos, reemplaza la fila home de la capa base
+ *    por la linea comentada que esta justo debajo de ella. Cuando los pulgares
+ *    nuevos (Esc y Backspace) ya se sientan naturales, vuelve a activarlos.
+ *
+ * 5. Si al activar los home row mods aparecen modificadores fantasma, sube
+ *    require-prior-idle-ms a 200 ANTES de tocar tapping-term-ms. Ese es el
+ *    parametro que corta la mayoria de los falsos positivos al teclear rapido.
+ * ---------------------------------------------------------------------------
  */
 
 #include <behaviors.dtsi>
@@ -14,119 +55,208 @@
 };
 
 / {
+    behaviors {
+        /*
+         * Home row mods, mano IZQUIERDA.
+         *
+         * hold-trigger-key-positions lista todas las teclas de la mano DERECHA
+         * mas los seis pulgares: el modificador solo se activa si la siguiente
+         * tecla viene de la otra mano. Esto elimina los falsos positivos al
+         * hacer rolls dentro de la misma mano (escribir "ae", "eo", "ou").
+         *
+         * require-prior-idle-ms: si veniamos tecleando hace menos de 150 ms,
+         * la tecla se comporta SIEMPRE como letra, nunca como modificador.
+         */
+        hml: home_row_mod_left {
+            compatible = "zmk,behavior-hold-tap";
+            #binding-cells = <2>;
+            flavor = "balanced";
+            tapping-term-ms = <200>;
+            quick-tap-ms = <175>;
+            require-prior-idle-ms = <150>;
+            hold-trigger-on-release;
+            hold-trigger-key-positions = <7 8 9 10 11 12 13 21 22 23 24 25 26 27 34 35 36 37 38 39 40 41 42 43 44 45>;
+            bindings = <&kp>, <&kp>;
+        };
+
+        /*
+         * Home row mods, mano DERECHA.
+         * Lista espejo: todas las teclas de la mano IZQUIERDA mas los pulgares.
+         */
+        hmr: home_row_mod_right {
+            compatible = "zmk,behavior-hold-tap";
+            #binding-cells = <2>;
+            flavor = "balanced";
+            tapping-term-ms = <200>;
+            quick-tap-ms = <175>;
+            require-prior-idle-ms = <150>;
+            hold-trigger-on-release;
+            hold-trigger-key-positions = <0 1 2 3 4 5 6 14 15 16 17 18 19 20 28 29 30 31 32 33 40 41 42 43 44 45>;
+            bindings = <&kp>, <&kp>;
+        };
+
+        /*
+         * Mod-tap de pulgar.
+         * "balanced" dispara el hold si presionas Y SUELTAS otra tecla mientras
+         * lo mantienes, que es el comportamiento correcto para un Shift.
+         * quick-tap-ms permite repetir Backspace a toda velocidad sin que la
+         * segunda pulsacion se interprete como hold.
+         */
+        tmt: thumb_mod_tap {
+            compatible = "zmk,behavior-hold-tap";
+            #binding-cells = <2>;
+            flavor = "balanced";
+            tapping-term-ms = <200>;
+            quick-tap-ms = <200>;
+            bindings = <&kp>, <&kp>;
+        };
+
+        /*
+         * Layer-tap de pulgar. Misma logica que el mod-tap, pero el hold
+         * activa una capa en lugar de un modificador.
+         */
+        tlt: thumb_layer_tap {
+            compatible = "zmk,behavior-hold-tap";
+            #binding-cells = <2>;
+            flavor = "balanced";
+            tapping-term-ms = <200>;
+            quick-tap-ms = <200>;
+            bindings = <&mo>, <&kp>;
+        };
+    };
+
+    /*
+     * La capa 3 (sistema) se activa sola cuando mantienes los dos pulgares de
+     * capa al mismo tiempo. Asi Bluetooth, bootloader y reset quedan fuera de
+     * las capas que usas a diario.
+     */
+    conditional_layers {
+        compatible = "zmk,conditional-layers";
+
+        tri_layer {
+            if-layers = <1 2>;
+            then-layer = <3>;
+        };
+    };
+
     keymap {
         compatible = "zmk,keymap";
 
         default_layer {
-            display-name = "QWERTY";
+            display-name = "DVORAK";
 
-            // --------------------------------------------------------------------------------
-            // |  TAB |  Q  |  W  |  E  |  R  |  T  |  MUTE |  PP   |  Y  |  U   |  I  |  O  |  P  | BSPC |
-            // | CTRL |  A  |  S  |  D  |  F  |  G  |  LALT |  RALT |  H  |  J   |  K  |  L  |  ;  |  '   |
-            // | SHFT |  Z  |  X  |  C  |  V  |  B  |               |  N  |  M   |  ,  |  .  |  /  | ESC  |
-            //                    | GUI | LWR | SPC |               | ENT | RSE  | ALT |
+            // ---------------------------------------------------------------------------------
+            // | ALT  |  '  |  ,  |  .  |  P  |  Y  | --- | --- |  F  |  G  |  C  |  R  |  L  | BSPC |
+            // | CTRL |  A  |  O  |  E  |  U  |  I  | --- | --- |  D  |  H  |  T  |  N  |  S  |  /   |
+            // | SHFT |  ;  |  Q  |  J  |  K  |  X  |           |  B  |  M  |  W  |  V  |  Z  | ESC  |
+            //                  | GUI/ESC | L1/TAB | SPC |      | ENT | L2/DEL | SHFT/BSPC |
+            //
+            // "---" son las cuatro posiciones muertas de la columna interior.
+            //
+            // ALT ocupa la esquina exterior superior izquierda, donde antes
+            // estaba TAB. TAB no se pierde: vive en el pulgar izquierdo. Esto
+            // garantiza que haya una tecla Alt real aunque los home row mods
+            // esten desactivados, que es el caso durante la semana de prueba.
+            //
+            // Modificadores en la fila home, de meñique hacia adentro:
+            // GUI, ALT, CTRL, SHIFT en ambas manos (simetrico).
+            //
+            // Los pulgares exteriores hacen doble trabajo: al tocarlos dan Esc y
+            // Backspace (dos teclas de altisima frecuencia que antes vivian en
+            // las esquinas del meñique); al mantenerlos dan GUI y Shift, que es
+            // exactamente lo que tenian antes. No se pierde nada.
+            //
+            // Esc y Tab aparecen duplicados en la columna exterior a proposito:
+            // es redundancia durante la transicion. Si en un mes no los usas
+            // ahi, esas dos posiciones quedan libres para lo que quieras.
 
             bindings = <
-&kp TAB       &kp APOSTROPHE  &kp COMMA  &kp DOT   &kp P  &kp Y      &kp C_MUTE  &kp C_PP  &kp F    &kp G  &kp C            &kp R  &kp L  &kp BSPC
-&kp LCTRL     &kp A           &kp O      &kp E     &kp U  &kp I      &kp LALT    &kp RALT  &kp D    &kp H  &kp T            &kp N  &kp S  &kp SQT
-&kp LEFT_ALT  &kp Z           &kp Q      &kp J     &kp K  &kp X                            &kp B    &kp M  &kp W            &kp V  &kp Z  &kp ESC
-                                         &kp LGUI  &mo 1  &kp SPACE                        &kp RET  &mo 2  &kp RIGHT_SHIFT
+&kp LALT   &kp APOSTROPHE  &kp COMMA    &kp PERIOD    &kp P         &kp Y        &none       &none     &kp F    &kp G          &kp C          &kp R         &kp L         &kp BSPC
+&kp LCTRL  &hml LGUI A     &hml LALT O  &hml LCTRL E  &hml LSHFT U  &kp I        &none       &none     &kp D    &hmr RSHFT H   &hmr RCTRL T   &hmr RALT N   &hmr RGUI S   &kp SLASH
+&kp LSHFT  &kp SEMICOLON   &kp Q        &kp J         &kp K         &kp X                              &kp B    &kp M          &kp W          &kp V         &kp Z         &kp ESC
+                                        &tmt LGUI ESC &tlt 1 TAB    &kp SPACE                          &kp RET  &tlt 2 DELETE  &tmt RSHFT BSPC
             >;
+
+            // FILA HOME SIN HOME ROW MODS (para la primera semana).
+            // Reemplaza la segunda linea de "bindings" por esta:
+            //
+            // &kp LCTRL  &kp A  &kp O  &kp E  &kp U  &kp I  &none  &none  &kp D  &kp H  &kp T  &kp N  &kp S  &kp SLASH
 
             sensor-bindings = <&inc_dec_kp C_VOL_DN C_VOL_UP &inc_dec_kp PG_UP PG_DN &inc_dec_kp C_PREV C_NEXT &inc_dec_kp C_VOL_DN C_VOL_UP>;
         };
 
-        lower_layer {
-            display-name = "NUMBER";
+        nav_num_layer {
+            display-name = "NUM/NAV";
 
-            // -----------------------------------------------------------------------------------------
-            // |  TAB |  1  |  2  |  3  |  4  |  5    |  LCTRL | RCTRL |  6  |  7  |  8  |  9  |  0  | BSPC |
-            // | CTRL | BT1 | BT2 | BT3 | BT4 | BT5   |  LALT  | RALT  | LFT | DWN |  UP | RGT |     |      |
-            // | SHFT | BTCR| RGB | RST | BOOT| Unlock|        |       |     |     |     |     |     |      |
-            //                    | GUI |     | SPC   |        | ENT   |     | ALT |
+            // ---------------------------------------------------------------------------------
+            // |      |  1  |  2  |  3  |  4  |  5  |     |     |  6   |  7   |  8   |  9   | RGT |     |
+            // |      | GUI | ALT | CTL | SFT | REP |     |     |  -   | LFT  |  0   |  =   |  *  |     |
+            // |      | INS | PSC | DWN | UP  |     |           | DEL  | HOME | PGDN | PGUP | END |     |
+            //
+            // Las flechas quedan en las posiciones fisicas de h, j, k, l de tu
+            // Dvorak, tal como las tenias. Los numeros siguen repartidos entre
+            // las dos manos.
+            //
+            // Los modificadores de la izquierda son STICKY (&sk): los tocas, los
+            // sueltas, y se aplican a la siguiente tecla. Es obligatorio aqui:
+            // UP esta en el indice izquierdo y DOWN en el medio izquierdo, asi
+            // que un Shift mantenido en la fila home de esa misma mano seria un
+            // acorde del mismo dedo, fisicamente imposible. Sticky lo convierte
+            // en secuencial y resuelve el conflicto.
+            //
+            // &key_repeat repite la ultima tecla pulsada.
 
             bindings = <
-&kp TAB    &kp N1        &kp N2           &kp N3        &kp N4        &kp N5          &kp LCTRL  &kp RCTRL  &kp N6    &kp N7    &kp N8     &kp N9     &kp RIGHT      &kp BSPC
-&kp LCTRL  &bt BT_SEL 0  &bt BT_SEL 1     &bt BT_SEL 2  &bt BT_SEL 3  &bt BT_SEL 4    &kp LALT   &kp RALT   &kp PLUS  &kp LEFT  &kp N0     &kp EQUAL  &kp BACKSPACE  &trans
-&kp LSHFT  &bt BT_CLR    &rgb_ug RGB_TOG  &kp DOWN      &kp UP        &studio_unlock                        &trans    &trans    &kp MINUS  &trans     &trans         &trans
-                                          &kp LGUI      &trans        &kp SPACE                             &kp LGUI  &trans    &kp SPACE
+&trans  &kp N1      &kp N2           &kp N3     &kp N4     &kp N5       &trans  &trans  &kp N6      &kp N7     &kp N8         &kp N9       &kp RIGHT     &trans
+&trans  &sk LGUI    &sk LALT         &sk LCTRL  &sk LSHFT  &key_repeat  &trans  &trans  &kp MINUS   &kp LEFT   &kp N0         &kp EQUAL    &kp ASTERISK  &trans
+&trans  &kp INSERT  &kp PRINTSCREEN  &kp DOWN   &kp UP     &none                        &kp DELETE  &kp HOME   &kp PAGE_DOWN  &kp PAGE_UP  &kp END       &trans
+                                     &trans     &trans     &trans                       &trans      &trans     &trans
             >;
         };
 
-        raise_layer {
-            display-name = "SYMBOL";
+        sym_layer {
+            display-name = "SYM/FN";
 
-            // -----------------------------------------------------------------------------------------
-            // |  TAB |  !  |  @  |  #  |  $  |  %  | LCTRL | RCTRL |  ^  |  &  |  *  |  (  |  )  | BSPC |
-            // | CTRL | HUD | HUI |     |     |     |  LALT | RALT  |  -  |  =  |  [  |  ]  |  \  |  `   |
-            // | SHFT |     |     |     |     |     |               |  _  |  +  |  {  |  }  | "|" |  ~   |
-            //                    | GUI |     | SPC |               | ENT |     | ALT |
+            // ---------------------------------------------------------------------------------
+            // |      |  !  |  @  |  #  |  $  |  %  | --- | --- |  ^  |  &  |  *  |  (  |  )  |     |
+            // | F11  | F1  | F2  | F3  | F4  | F5  | --- | --- |  -  |  =  |  [  |  ]  |  \  |  `  |
+            // | F12  | F6  | F7  | F8  | F9  | F10 |           |  _  |  +  |  {  |  }  | "|" |  ~  |
+            //
+            // F11 y F12 estaban en la columna interior muerta. Pasan a la
+            // columna exterior izquierda, que estaba sin usar en esta capa.
+            //
+            // Esta capa se mantiene con el pulgar DERECHO, asi que la mano
+            // izquierda esta libre y en posicion de reposo: ahi viven las teclas
+            // de funcion. Eso ahorra una capa entera.
 
             bindings = <
-&kp TAB    &kp EXCL         &kp AT           &kp HASH  &kp DLLR  &kp PRCNT  &kp LCTRL  &kp RCTRL  &kp CARET  &kp AMPS   &kp LEFT_PARENTHESIS  &kp RIGHT_PARENTHESIS  &kp ASTERISK  &kp BSPC
-&kp LCTRL  &rgb_ug RGB_HUD  &rgb_ug RGB_HUI  &trans    &trans    &trans     &kp LALT   &kp RALT   &kp MINUS  &kp EQUAL  &kp LBKT              &kp RBKT               &kp BSLH      &kp GRAVE
-&kp LSHFT  &trans           &trans           &trans    &trans    &trans                           &kp UNDER  &kp PLUS   &kp LBRC              &kp RBRC               &kp PIPE      &kp TILDE
-                                             &kp LGUI  &trans    &kp SPACE                        &kp RET    &trans     &kp RALT
+&trans   &kp EXCLAMATION  &kp AT_SIGN  &kp HASH  &kp DOLLAR  &kp PERCENT  &none  &none  &kp CARET       &kp AMPERSAND  &kp ASTERISK      &kp LEFT_PARENTHESIS  &kp RIGHT_PARENTHESIS  &trans
+&kp F11  &kp F1           &kp F2       &kp F3    &kp F4      &kp F5       &none  &none  &kp MINUS       &kp EQUAL      &kp LEFT_BRACKET  &kp RIGHT_BRACKET     &kp BACKSLASH          &kp GRAVE
+&kp F12  &kp F6           &kp F7       &kp F8    &kp F9      &kp F10                    &kp UNDERSCORE  &kp PLUS       &kp LEFT_BRACE    &kp RIGHT_BRACE       &kp PIPE               &kp TILDE
+                                      &trans    &trans      &trans                         &trans          &trans         &trans
             >;
         };
 
-        extra_layer_1 {
-            display-name = "EXTRA 1";
-            bindings = <
-&trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans
-&trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans
-&trans  &trans  &trans  &trans  &trans  &trans                  &trans  &trans  &trans  &trans  &trans  &trans
-                        &trans  &trans  &trans                  &trans  &trans  &trans
-            >;
-        };
+        system_layer {
+            display-name = "SYS";
 
-        extra_layer_2 {
-            display-name = "EXTRA 2";
-            bindings = <
-&trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans
-&trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans
-&trans  &trans  &trans  &trans  &trans  &trans                  &trans  &trans  &trans  &trans  &trans  &trans
-                        &trans  &trans  &trans                  &trans  &trans  &trans
-            >;
-        };
+            // Capa condicional: se activa manteniendo los dos pulgares de capa.
+            //
+            // bootloader y sys_reset afectan SOLO la mitad del teclado donde los
+            // presionas, por eso aparecen en ambos lados.
+            //
+            // studio_unlock habilita la edicion en vivo desde ZMK Studio.
+            //
+            // Las teclas multimedia (anterior, play/pausa, siguiente, mute)
+            // estaban en la columna interior muerta de la capa base. Viven aqui
+            // ahora, en la fila home de la mano derecha. Los encoders siguen
+            // cubriendo volumen y pista en cualquier capa.
 
-        extra_layer_3 {
-            display-name = "EXTRA 3";
             bindings = <
-&trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans
-&trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans
-&trans  &trans  &trans  &trans  &trans  &trans                  &trans  &trans  &trans  &trans  &trans  &trans
-                        &trans  &trans  &trans                  &trans  &trans  &trans
-            >;
-        };
-
-        extra_layer_4 {
-            display-name = "EXTRA 4";
-            bindings = <
-&trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans
-&trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans
-&trans  &trans  &trans  &trans  &trans  &trans                  &trans  &trans  &trans  &trans  &trans  &trans
-                        &trans  &trans  &trans                  &trans  &trans  &trans
-            >;
-        };
-
-        extra_layer_5 {
-            display-name = "EXTRA 5";
-            bindings = <
-&trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans
-&trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans
-&trans  &trans  &trans  &trans  &trans  &trans                  &trans  &trans  &trans  &trans  &trans  &trans
-                        &trans  &trans  &trans                  &trans  &trans  &trans
-            >;
-        };
-
-        extra_layer_6 {
-            display-name = "EXTRA 6";
-            bindings = <
-&trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans
-&trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans
-&trans  &trans  &trans  &trans  &trans  &trans                  &trans  &trans  &trans  &trans  &trans  &trans
-                        &trans  &trans  &trans                  &trans  &trans  &trans
+&trans  &bt BT_SEL 0  &bt BT_SEL 1  &bt BT_SEL 2    &bt BT_SEL 3  &bt BT_SEL 4  &none  &none  &rgb_ug RGB_TOG  &rgb_ug RGB_HUD  &rgb_ug RGB_HUI  &rgb_ug RGB_BRD  &rgb_ug RGB_BRI  &none
+&trans  &bt BT_CLR    &bt BT_PRV    &bt BT_NXT      &none         &none         &none  &none  &kp C_PREV       &kp C_PP         &kp C_NEXT       &kp C_MUTE       &none            &none
+&trans  &bootloader   &sys_reset    &studio_unlock  &none         &none                       &none            &none            &none            &none            &sys_reset       &bootloader
+                                    &trans          &trans        &trans                      &trans           &trans           &trans
             >;
         };
     };
