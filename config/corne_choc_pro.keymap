@@ -39,7 +39,12 @@
  *    por la linea comentada que esta justo debajo de ella. Cuando los pulgares
  *    nuevos (Esc y Backspace) ya se sientan naturales, vuelve a activarlos.
  *
- * 5. Si al activar los home row mods aparecen modificadores fantasma, sube
+ * 5. Los pulgares usan flavor "hold-preferred" y la fila home usa "balanced".
+ *    No es inconsistencia: el pulgar nunca escribe letras en medio de una
+ *    palabra, asi que puede resolver a hold de forma agresiva. Una letra de la
+ *    fila home no puede, o cada roll se convertiria en un modificador.
+ *
+ * 6. Si al activar los home row mods aparecen modificadores fantasma, sube
  *    require-prior-idle-ms a 200 ANTES de tocar tapping-term-ms. Ese es el
  *    parametro que corta la mayoria de los falsos positivos al teclear rapido.
  * ---------------------------------------------------------------------------
@@ -97,15 +102,26 @@
 
         /*
          * Mod-tap de pulgar.
-         * "balanced" dispara el hold si presionas Y SUELTAS otra tecla mientras
-         * lo mantienes, que es el comportamiento correcto para un Shift.
+         *
+         * "hold-preferred": CUALQUIER tecla presionada mientras mantienes el
+         * pulgar resuelve a hold de inmediato, sin importar en que orden se
+         * suelten las dos teclas.
+         *
+         * Esto es obligatorio aqui. Con "balanced" el hold solo gana si la otra
+         * tecla se suelta ANTES que el pulgar; al escribir rapido levantas el
+         * pulgar primero y la tecla se resuelve como tap, lo que mete un
+         * Backspace en medio de una mayuscula.
+         *
+         * No se pierde el tap: si sueltas el pulgar sin haber tocado nada mas,
+         * sigue siendo un toque.
+         *
          * quick-tap-ms permite repetir Backspace a toda velocidad sin que la
          * segunda pulsacion se interprete como hold.
          */
         tmt: thumb_mod_tap {
             compatible = "zmk,behavior-hold-tap";
             #binding-cells = <2>;
-            flavor = "balanced";
+            flavor = "hold-preferred";
             tapping-term-ms = <200>;
             quick-tap-ms = <200>;
             bindings = <&kp>, <&kp>;
@@ -114,11 +130,15 @@
         /*
          * Layer-tap de pulgar. Misma logica que el mod-tap, pero el hold
          * activa una capa en lugar de un modificador.
+         *
+         * "hold-preferred" por la misma razon: con "balanced", escribir
+         * "select * from" rapido levanta el pulgar antes que el meñique y la
+         * capa nunca se activa, asi que en vez del asterisco sale un Tab.
          */
         tlt: thumb_layer_tap {
             compatible = "zmk,behavior-hold-tap";
             #binding-cells = <2>;
-            flavor = "balanced";
+            flavor = "hold-preferred";
             tapping-term-ms = <200>;
             quick-tap-ms = <200>;
             bindings = <&mo>, <&kp>;
